@@ -1,0 +1,15 @@
+{
+	"name": "adf-contoso-analytics-pipeline",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "northeurope",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "ed1c528a-a3aa-4fcf-b15a-d203ad27b936",
+		"tenantId": "fde45dc2-225f-4592-bc87-2613d1ac20ca"
+	}
+}
