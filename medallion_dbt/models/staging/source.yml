@@ -1,0 +1,83 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: dbo
+    description: "Données brutes de la couche Bronze stockées  le catalogue dbw_contoso_analytics de Databricks."
+    tables:
+      - name: currency_exchange
+        description: "Taux de change quotidiens."
+        columns:
+          - name: Exchange
+            tests:
+              - not_null
+
+      - name: customer
+        description: "Données démographiques des clients."
+        columns:
+          - name: CustomerKey
+            tests:
+              - unique
+              - not_null
+          - name: Gender
+            tests:
+              - accepted_values:
+                  values: ['male', 'female']
+
+      - name: date
+        description: "Dimension temps."
+        columns:
+          - name: Date
+            tests:
+              - unique
+              - not_null
+
+      - name: order_rows
+        description: "Lignes de détails des commandes."
+        columns:
+          - name: OrderKey
+            tests:
+              - not_null
+          - name: LineNumber
+            tests:
+              - not_null
+          - name: Quantity
+            tests:
+              - not_null
+
+      - name: orders
+        description: "En-têtes des commandes."
+        columns:
+          - name: OrderKey
+            tests:
+              - unique
+              - not_null
+
+      - name: product
+        description: "Référentiel des produits."
+        columns:
+          - name: ProductKey
+            tests:
+              - unique
+              - not_null
+
+      - name: sales
+        description: "Données consolidées des ventes."
+        columns:
+          - name: OrderKey
+            tests:
+              - not_null
+          - name: LineNumber
+            tests:
+              - not_null
+          - name: Quantity
+            tests:
+              - not_null
+
+      - name: store
+        description: "Référentiel des magasins physiques et en ligne."
+        columns:
+          - name: StoreKey
+            tests:
+              - unique
+              - not_null
