@@ -1,5 +1,14 @@
 # 🥇 Medallion Architecture — DBT & Azure
 
+![Azure](https://img.shields.io/badge/Microsoft%20Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)
+![Azure Data Factory](https://img.shields.io/badge/Azure%20Data%20Factory-0078D4?style=for-the-badge&logo=azuredataexplorer&logoColor=white)
+![Databricks](https://img.shields.io/badge/Databricks-FF3621?style=for-the-badge&logo=databricks&logoColor=white)
+![dbt](https://img.shields.io/badge/dbt-FF694B?style=for-the-badge&logo=dbt&logoColor=white)
+![Delta Lake](https://img.shields.io/badge/Delta%20Lake-00ADD4?style=for-the-badge&logo=delta&logoColor=white)
+![SQL](https://img.shields.io/badge/SQL-4479A1?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
+
 Pipeline de données de bout en bout implémentant une **architecture Médaillon (Bronze → Silver → Gold)** sur Azure pour le jeu de données **Contoso Retail**. Le pipeline orchestre l'ingestion avec **Azure Data Factory**, le stockage brut avec **Azure Databricks / Unity Catalog** sur **Azure Data Lake Storage Gen2**, et les transformations analytiques avec **dbt Core** (snapshots SCD Type 2 et modèles marts en Delta Lake).
 
 ![Architecture](images/Architecture%20du%20projet.jpg)
