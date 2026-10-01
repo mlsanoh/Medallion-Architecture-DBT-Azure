@@ -1,4 +1,7 @@
--- Les revenus totaux, les coûts et les marges nettes réelles par mois, par magasin et par catégorie de produit après conversion des devises
+-- Revenus, coûts et marges par mois, magasin, produit et CurrencyCode.
+-- Montants source : aucune conversion n'est appliquée à ExchangeRate.
+-- La comparaison des marges suppose NetPrice et UnitCost dans la même devise.
+-- Ne pas additionner des CurrencyCode différents sans contrat de conversion validé.
 
 {{
     config(
@@ -20,8 +23,7 @@ with sales_fact as (
         UnitPrice,
         NetPrice,
         UnitCost,
-        CurrencyCode,
-        ExchangeRate
+        CurrencyCode
     from {{ ref('sales_snapshot') }}
     where dbt_valid_to is null
 ),

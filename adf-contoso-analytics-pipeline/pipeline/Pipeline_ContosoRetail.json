@@ -8,8 +8,8 @@
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
+					"retry": 2,
+					"retryIntervalInSeconds": 60,
 					"secureOutput": false,
 					"secureInput": false
 				},
@@ -56,8 +56,8 @@
 							"dependsOn": [],
 							"policy": {
 								"timeout": "0.12:00:00",
-								"retry": 0,
-								"retryIntervalInSeconds": 30,
+								"retry": 2,
+								"retryIntervalInSeconds": 60,
 								"secureOutput": false,
 								"secureInput": false
 							},
@@ -102,7 +102,10 @@
 									"referenceName": "FormatParquet",
 									"type": "DatasetReference",
 									"parameters": {
-										"FolderName": "@formatDateTime(utcNow(), 'yyyyMMdd')",
+										"FolderName": {
+											"value": "@if(empty(pipeline().parameters.IngestionDate), formatDateTime(pipeline().TriggerTime, 'yyyyMMdd'), pipeline().parameters.IngestionDate)",
+											"type": "Expression"
+										},
 										"FileName": {
 											"value": "@concat(item().SchemaName, '.', item().TableName, '.parquet')",
 											"type": "Expression"
@@ -124,14 +127,17 @@
 							],
 							"policy": {
 								"timeout": "0.12:00:00",
-								"retry": 0,
-								"retryIntervalInSeconds": 30,
+								"retry": 2,
+								"retryIntervalInSeconds": 60,
 								"secureOutput": false,
 								"secureInput": false
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"notebookPath": "/Users/mlsanoh3@outlook.com/Architecture Medallion Contoso/notebook bronze",
+								"notebookPath": {
+									"value": "@pipeline().parameters.NotebookPath",
+									"type": "Expression"
+								},
 								"baseParameters": {
 									"table_schema": {
 										"value": "@item().SchemaName",
@@ -142,7 +148,7 @@
 										"type": "Expression"
 									},
 									"fileName": {
-										"value": "@formatDateTime(utcNow(), 'yyyyMMdd')",
+										"value": "@if(empty(pipeline().parameters.IngestionDate), formatDateTime(pipeline().TriggerTime, 'yyyyMMdd'), pipeline().parameters.IngestionDate)",
 										"type": "Expression"
 									}
 								}
@@ -157,7 +163,16 @@
 			}
 		],
 		"annotations": [],
-		"lastPublishTime": "2026-07-07T02:27:20Z"
+		"lastPublishTime": "2026-07-07T02:27:20Z",
+		"parameters": {
+			"NotebookPath": {
+				"type": "string"
+			},
+			"IngestionDate": {
+				"type": "string",
+				"defaultValue": ""
+			}
+		}
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

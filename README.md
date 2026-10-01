@@ -363,3 +363,30 @@ Les dossiers `tests/` (tests singuliers custom) et `macros/` (tests génériques
 
 ---
 
+
+
+## Fiabilité de l'ingestion et interprétation des montants
+
+Le pipeline ADF attend le paramètre `NotebookPath` : renseigner le chemin absolu du
+notebook Bronze importé dans votre workspace. `IngestionDate` est optionnel au format
+`yyyyMMdd` ; s'il est vide, la date de déclenchement ADF est utilisée. Copie et notebook
+partagent cette date fixe, y compris après un retry. Lookup, Copy et Notebook ont deux
+retries espacés de 60 secondes. Le notebook publié doit rester idempotent pour ces reprises.
+
+`mart_sales_performance` présente des montants source groupés par `CurrencyCode`.
+Il n'applique actuellement aucune conversion par `ExchangeRate`. Ne pas sommer des
+devises différentes ; les marges supposent que `NetPrice` et `UnitCost` d'une vente
+sont exprimés dans la même devise. Avant d'introduire une devise de reporting, confirmer
+la devise des coûts, le sens du taux et la date applicable avec le contrat de la source.
+Le test dbt `sales_financial_fields` détecte les prix, coûts, quantités ou devises
+manquants dans les versions courantes du snapshot.
+
+Les tests de régression `tests/test_sales_mart.py` exécutent le SQL du mart sur de
+petits jeux de données sous DuckDB : séparation des devises, exclusion des versions
+historiques et détection des valeurs financières absentes. Ils ne remplacent pas
+`dbt build` contre Databricks.
+
+```bash
+pip install -r requirements-test.txt pandas
+python -m pytest tests -q
+```
