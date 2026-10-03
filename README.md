@@ -237,7 +237,7 @@ Le déploiement combine deux mécanismes distincts observés dans le projet :
 | Composant | Mécanisme de déploiement |
 |---|---|
 | **Azure Data Factory** | Intégration Git native d'ADF. Le fichier `publish_config.json` définit `publishBranch: "adf_publish"` : chaque publication depuis le portail ADF génère les templates ARM sur cette branche, qui peut ensuite être déployée via Azure DevOps/GitHub Actions ou manuellement. |
-| **dbt (Silver / Gold)** | Aucun pipeline CI/CD n'est présent dans le dépôt (pas de workflow GitHub Actions ni Azure Pipelines). Le déploiement des modèles dbt se fait donc actuellement via exécution manuelle (`dbt build`) contre le workspace Databricks cible, en changeant de `target` dans `profiles.yml` si plusieurs environnements (dev/prod) sont nécessaires. |
+| **dbt (Silver / Gold)** | Les modèles et les tests de données sont exécutés manuellement avec `dbt build` contre le workspace Databricks cible. Le workflow GitHub Actions vérifie uniquement la syntaxe des fichiers JSON ADF ; il ne déploie aucune ressource et n'exécute pas dbt. |
 
 ---
 
@@ -286,7 +286,8 @@ Medallion-Architecture-DBT-Azure/
 │   │   ├── products.sql
 │   │   ├── sales.sql
 │   │   └── store.sql
-│   ├── tests/                            # (vide — .gitkeep uniquement)
+│   ├── tests/
+│   │   └── sales_financial_fields.sql     # Détecte les valeurs financières manquantes
 │   ├── dbt_project.yml                   # Configuration du projet dbt
 │   └── .gitignore                        # Exclut profiles.yml, target/, dbt_packages/, logs/
 │
@@ -346,7 +347,21 @@ Exécution :
 dbt test
 ```
 
-Les dossiers `tests/` (tests singuliers custom) et `macros/` (tests génériques custom) sont présents mais **vides** dans le dépôt actuel.
+Le test SQL `medallion_dbt/tests/sales_financial_fields.sql` renvoie les ventes
+courantes dont la devise, le prix net, le coût unitaire ou la quantité sont absents.
+Un test dbt réussit lorsqu'il ne renvoie aucune ligne.
+
+Après création du profil Databricks et du snapshot `sales_snapshot`, exécuter :
+
+```bash
+cd medallion_dbt
+dbt test --select sales_financial_fields
+```
+
+Ces tests nécessitent une connexion Databricks active. Le workflow GitHub Actions
+`Validation JSON ADF` vérifie uniquement la syntaxe JSON des fichiers ADF sur les
+pull requests et les push sur `master`. Il ne valide ni les données ni l'exécution
+des pipelines dans Azure.
 
 ---
 
@@ -355,7 +370,7 @@ Les dossiers `tests/` (tests singuliers custom) et `macros/` (tests génériques
 | Problème | Cause probable | Solution |
 |---|---|---|
 | `dbt debug` échoue avec une erreur d'authentification | `profiles.yml` absent ou mal configuré | Créer `~/.dbt/profiles.yml` avec un token Databricks valide (voir [Configuration](#-configuration)) |
-| Les tables Bronze n'apparaissent pas dans Databricks | Le pipeline ADF n'a pas encore été exécuté, ou le notebook `notebook bronze` référencé dans `Notebook1` n'existe pas dans le workspace cible | Vérifier que le notebook est bien déployé au chemin `/Users/.../Architecture Medallion Contoso/notebook bronze` (chemin codé en dur dans `Pipeline_ContosoRetail.json`) et l'adapter si nécessaire |
+| Les tables Bronze n'apparaissent pas dans Databricks | Le pipeline ADF n'a pas encore été exécuté, ou le notebook Bronze n'existe pas dans le workspace cible | Renseigner le paramètre `NotebookPath` avec le chemin absolu du notebook Bronze publié dans Databricks |
 | Erreur `EXTERNAL LOCATION already exists` ou credential introuvable | La storage credential `sc-stcontosoanalytics` référencée dans le notebook n'existe pas dans votre Unity Catalog | Créer la credential correspondante ou adapter son nom dans `notebook db.ipynb` |
 | Erreur d'accès à `dbutils.secrets.get(scope="databricksScope", key="storage-key")` | Le secret scope Databricks n'est pas configuré | Créer le scope `databricksScope` et y ajouter la clé `storage-key` du compte de stockage |
 | `dbt snapshot`/`dbt run` échouent sur `location_root` | Le nom de compte de stockage `stcontosoanalytics` est codé en dur dans les modèles/snapshots | Remplacer `stcontosoanalytics` par le nom de votre propre compte de stockage dans les fichiers `.sql` concernés |
@@ -363,3 +378,23 @@ Les dossiers `tests/` (tests singuliers custom) et `macros/` (tests génériques
 
 ---
 
+
+
+## Fiabilité de l'ingestion et interprétation des montants
+
+Le pipeline ADF attend le paramètre `NotebookPath` : renseigner le chemin absolu du
+notebook Bronze importé dans votre workspace. `IngestionDate` est optionnel au format
+`yyyyMMdd` ; s'il est vide, la date de déclenchement ADF est utilisée. Copie et notebook
+partagent cette date fixe, y compris après un retry. Lookup, Copy et Notebook ont deux
+retries espacés de 60 secondes. Le notebook publié doit rester idempotent pour ces reprises.
+
+`mart_sales_performance` présente des montants source groupés par `CurrencyCode`.
+Il n'applique actuellement aucune conversion par `ExchangeRate`. Ne pas sommer des
+devises différentes ; les marges supposent que `NetPrice` et `UnitCost` d'une vente
+sont exprimés dans la même devise. Avant d'introduire une devise de reporting, confirmer
+la devise des coûts, le sens du taux et la date applicable avec le contrat de la source.
+Le test dbt `sales_financial_fields` détecte les prix, coûts, quantités ou devises
+manquants dans les versions courantes du snapshot.
+
+Les contrôles de données restent dans les fichiers SQL et YAML dbt. Aucun script
+Python de rendu Jinja ni moteur DuckDB supplémentaire n'est nécessaire.
