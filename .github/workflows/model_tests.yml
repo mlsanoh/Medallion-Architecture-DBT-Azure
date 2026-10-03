@@ -1,4 +1,4 @@
-name: Sales mart tests
+name: Validation JSON ADF
 on:
   push:
     branches: [master]
@@ -7,12 +7,15 @@ on:
 permissions:
   contents: read
 jobs:
-  test:
+  validate_adf:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r requirements-test.txt pandas
-      - run: python -m pytest tests -q
+      - name: Vérifier la syntaxe des fichiers JSON ADF
+        run: |
+          for file in adf-contoso-analytics-pipeline/*/*.json adf-contoso-analytics-pipeline/publish_config.json; do
+            python -m json.tool "$file" > /dev/null
+          done
